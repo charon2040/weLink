@@ -1,0 +1,233 @@
+# =============================================================================
+# ShardingSphere 5.5+ 原生配置 — 通过 ShardingSphereDriver URL 加载
+# 加载方式: spring.datasource.url=jdbc:shardingsphere:classpath:sharding-config.yaml
+# =============================================================================
+
+mode:
+  type: Standalone
+
+dataSources:
+  ds0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: $${WELINK_SHARD_DS0_JDBC_URL::jdbc:mysql://localhost:3307/welink_msg_00?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    username: $${WELINK_SHARD_DB_USERNAME::root}
+    password: $${WELINK_SHARD_DB_PASSWORD::123456}
+    maximumPoolSize: 100
+    minimumIdle: 5
+    connectionTimeout: 30000
+    idleTimeout: 600000
+    maxLifetime: 1800000
+    leakDetectionThreshold: 60000
+  ds1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: $${WELINK_SHARD_DS1_JDBC_URL::jdbc:mysql://localhost:3308/welink_msg_01?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    username: $${WELINK_SHARD_DB_USERNAME::root}
+    password: $${WELINK_SHARD_DB_PASSWORD::123456}
+    maximumPoolSize: 100
+    minimumIdle: 5
+    connectionTimeout: 30000
+    idleTimeout: 600000
+    maxLifetime: 1800000
+    leakDetectionThreshold: 60000
+  ds2:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: $${WELINK_SHARD_DS2_JDBC_URL::jdbc:mysql://localhost:3309/welink_msg_02?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    username: $${WELINK_SHARD_DB_USERNAME::root}
+    password: $${WELINK_SHARD_DB_PASSWORD::123456}
+    maximumPoolSize: 100
+    minimumIdle: 5
+    connectionTimeout: 30000
+    idleTimeout: 600000
+    maxLifetime: 1800000
+    leakDetectionThreshold: 60000
+  ds3:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: $${WELINK_SHARD_DS3_JDBC_URL::jdbc:mysql://localhost:3310/welink_msg_03?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    username: $${WELINK_SHARD_DB_USERNAME::root}
+    password: $${WELINK_SHARD_DB_PASSWORD::123456}
+    maximumPoolSize: 100
+    minimumIdle: 5
+    connectionTimeout: 30000
+    idleTimeout: 600000
+    maxLifetime: 1800000
+    leakDetectionThreshold: 60000
+  ds4:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: $${WELINK_SHARD_DS4_JDBC_URL::jdbc:mysql://localhost:3311/welink_msg_04?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    username: $${WELINK_SHARD_DB_USERNAME::root}
+    password: $${WELINK_SHARD_DB_PASSWORD::123456}
+    maximumPoolSize: 100
+    minimumIdle: 5
+    connectionTimeout: 30000
+    idleTimeout: 600000
+    maxLifetime: 1800000
+    leakDetectionThreshold: 60000
+  ds5:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: $${WELINK_SHARD_DS5_JDBC_URL::jdbc:mysql://localhost:3312/welink_msg_05?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    username: $${WELINK_SHARD_DB_USERNAME::root}
+    password: $${WELINK_SHARD_DB_PASSWORD::123456}
+    maximumPoolSize: 100
+    minimumIdle: 5
+    connectionTimeout: 30000
+    idleTimeout: 600000
+    maxLifetime: 1800000
+    leakDetectionThreshold: 60000
+  ds6:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: $${WELINK_SHARD_DS6_JDBC_URL::jdbc:mysql://localhost:3313/welink_msg_06?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    username: $${WELINK_SHARD_DB_USERNAME::root}
+    password: $${WELINK_SHARD_DB_PASSWORD::123456}
+    maximumPoolSize: 100
+    minimumIdle: 5
+    connectionTimeout: 30000
+    idleTimeout: 600000
+    maxLifetime: 1800000
+    leakDetectionThreshold: 60000
+  ds7:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: $${WELINK_SHARD_DS7_JDBC_URL::jdbc:mysql://localhost:3314/welink_msg_07?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    username: $${WELINK_SHARD_DB_USERNAME::root}
+    password: $${WELINK_SHARD_DB_PASSWORD::123456}
+    maximumPoolSize: 100
+    minimumIdle: 5
+    connectionTimeout: 30000
+    idleTimeout: 600000
+    maxLifetime: 1800000
+    leakDetectionThreshold: 60000
+  unsharded:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: $${WELINK_MAIN_DB_JDBC_URL::jdbc:mysql://localhost:3315/welink?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    username: $${WELINK_MAIN_DB_USERNAME::root}
+    password: $${WELINK_MAIN_DB_PASSWORD::123456}
+    maximumPoolSize: 200
+    minimumIdle: 10
+    connectionTimeout: 30000
+    idleTimeout: 600000
+    maxLifetime: 1800000
+    leakDetectionThreshold: 60000
+
+rules:
+  # 广播表 (5.5+ 独立规则) - 每个分片存全量, 用于静态小表
+  - !BROADCAST
+    tables:
+      - group_info
+
+  - !SHARDING
+    tables:
+      message:
+        actualDataNodes: ds${0..7}.message_${[202501,202502,202503,202504,202505,202506,202507,202508,202509,202510,202511,202512,202601,202602,202603,202604,202605,202606,202607,202608,202609,202610,202611,202612,202701,202702,202703,202704,202705,202706,202707,202708,202709,202710,202711,202712,202801,202802,202803,202804,202805,202806,202807,202808,202809,202810,202811,202812,202901,202902,202903,202904,202905,202906,202907,202908,202909,202910,202911,202912,203001,203002,203003,203004,203005,203006,203007,203008,203009,203010,203011,203012]}
+        databaseStrategy:
+          standard:
+            shardingColumn: conversation_id
+            shardingAlgorithmName: message-db-inline
+        tableStrategy:
+          standard:
+            shardingColumn: created_at
+            shardingAlgorithmName: message-table-month
+        keyGenerateStrategy:
+          column: id
+          keyGeneratorName: snowflake
+      message_inbox:
+        actualDataNodes: ds${0..7}.message_inbox_${(0..63).collect{String.format('%02d', it)}}
+        databaseStrategy:
+          standard:
+            shardingColumn: receiver_id
+            shardingAlgorithmName: inbox-db-inline
+        tableStrategy:
+          standard:
+            shardingColumn: receiver_id
+            shardingAlgorithmName: inbox-table-inline
+        keyGenerateStrategy:
+          column: id
+          keyGeneratorName: snowflake
+      message_outbox:
+        actualDataNodes: ds${0..7}.message_outbox_${(0..63).collect{String.format('%02d', it)}}
+        databaseStrategy:
+          standard:
+            shardingColumn: target_user_id
+            shardingAlgorithmName: outbox-db-inline
+        tableStrategy:
+          standard:
+            shardingColumn: target_user_id
+            shardingAlgorithmName: outbox-table-inline
+        keyGenerateStrategy:
+          column: id
+          keyGeneratorName: snowflake
+      delivery_receipt:
+        actualDataNodes: ds${0..7}.delivery_receipt_${(0..63).collect{String.format('%02d', it)}}
+        databaseStrategy:
+          standard:
+            shardingColumn: receiver_id
+            shardingAlgorithmName: receipt-db-inline
+        tableStrategy:
+          standard:
+            shardingColumn: receiver_id
+            shardingAlgorithmName: receipt-table-inline
+        keyGenerateStrategy:
+          column: id
+          keyGeneratorName: snowflake
+
+    shardingAlgorithms:
+      message-db-inline:
+        type: INLINE
+        props:
+          algorithm-expression: ds${conversation_id % 8}
+      message-table-month:
+        type: INTERVAL
+        props:
+          datetime-pattern: "yyyy-MM-dd HH:mm:ss"
+          datetime-lower: "2025-01-01 00:00:00"
+          datetime-upper: "2099-12-31 23:59:59"
+          sharding-suffix-pattern: "yyyyMM"
+          datetime-interval-amount: "1"
+          datetime-interval-unit: "MONTHS"
+      inbox-db-inline:
+        type: INLINE
+        props:
+          algorithm-expression: ds${receiver_id % 8}
+      inbox-table-inline:
+        type: INLINE
+        props:
+          algorithm-expression: message_inbox_${String.format('%02d', receiver_id % 64)}
+      outbox-db-inline:
+        type: INLINE
+        props:
+          algorithm-expression: ds${target_user_id % 8}
+      outbox-table-inline:
+        type: INLINE
+        props:
+          algorithm-expression: message_outbox_${String.format('%02d', target_user_id % 64)}
+      receipt-db-inline:
+        type: INLINE
+        props:
+          algorithm-expression: ds${receiver_id % 8}
+      receipt-table-inline:
+        type: INLINE
+        props:
+          algorithm-expression: delivery_receipt_${String.format('%02d', receiver_id % 64)}
+
+    keyGenerators:
+      snowflake:
+        type: SNOWFLAKE
+        props:
+          worker-id: 1
+
+  # 单表 (未配置分片规则的表) 默认路由到 unsharded 数据源
+  - !SINGLE
+    tables:
+      - "*.*"
+    defaultDataSource: unsharded
+
+props:
+  sql-show: false
+  sql-simple: true

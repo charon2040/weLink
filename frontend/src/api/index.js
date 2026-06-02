@@ -9,6 +9,10 @@ export const authApi = {
     return api.post('/auth/login', data)
   },
 
+  refresh(refreshToken) {
+    return api.post('/auth/refresh', { refreshToken })
+  },
+
   getUserInfo(userId) {
     return api.get(`/user/${userId}`)
   },
@@ -61,24 +65,48 @@ export const groupApi = {
     return api.post('/group/join/by-name', null, { params: { groupName } })
   },
 
+  joinByNo(groupNo) {
+    return api.post('/group/join/by-no', null, { params: { groupNo } })
+  },
+
   getList() {
     return api.get('/group/list')
+  },
+
+  getInfo(groupId) {
+    return api.get(`/group/${groupId}`)
+  },
+
+  updateNotice(groupId, notice) {
+    return api.post(`/group/${groupId}/notice`, { notice })
   },
 
   getMembers(groupId) {
     return api.get(`/group/${groupId}/members`)
   },
 
-  inviteMembers(groupId, memberIds) {
+  quit(groupId) {
+    return api.delete(`/group/${groupId}/quit`)
+  },
+
+  invite(groupId, memberIds) {
     return api.post(`/group/${groupId}/invite`, memberIds)
   },
 
-  kickMember(groupId, targetId) {
+  inviteByUsername(groupId, usernames) {
+    return api.post(`/group/${groupId}/invite/by-username`, usernames)
+  },
+
+  kick(groupId, targetId) {
     return api.delete(`/group/${groupId}/kick/${targetId}`)
   },
 
-  quitGroup(groupId) {
-    return api.delete(`/group/${groupId}/quit`)
+  transferOwnership(groupId, newOwnerId) {
+    return api.post(`/group/${groupId}/transfer/${newOwnerId}`)
+  },
+
+  dissolve(groupId) {
+    return api.delete(`/group/${groupId}`)
   }
 }
 
@@ -95,8 +123,20 @@ export const messageApi = {
     return api.get('/message/history/group', { params })
   },
 
+  searchMessages(data) {
+    return api.post('/message/search', data)
+  },
+
+  getMessageContext(data) {
+    return api.post('/message/context', data)
+  },
+
   getOfflineMessages() {
     return api.get('/message/offline')
+  },
+
+  syncMessages(cursors) {
+    return api.post('/message/sync', cursors)
   },
 
   markAsRead(msgId) {
@@ -117,5 +157,9 @@ export const fileApi = {
         'Content-Type': 'multipart/form-data'
       }
     })
+  },
+
+  getMeta(fileId) {
+    return api.get(`/files/${fileId}/meta`)
   }
 }

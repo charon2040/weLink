@@ -75,4 +75,14 @@ public class JwtUtil {
             return false;
         }
     }
+
+    /** 校验是否为 refresh token (claim "type"="refresh"). */
+    public boolean isRefreshToken(String token) {
+        try {
+            Claims claims = parseToken(token);
+            return "refresh".equals(claims.get("type", String.class));
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }

@@ -2,11 +2,31 @@
   <div class="main-container">
     <div class="sidebar">
       <div class="sidebar-header">
+        <div class="brand-block">
+          <div class="brand-kicker">WeLink</div>
+          <div class="brand-title">协作通讯台</div>
+        </div>
         <div class="user-info">
-          <el-avatar :size="40" :src="userStore.userInfo?.avatar">
-            {{ userStore.userInfo?.username?.charAt(0)?.toUpperCase() }}
-          </el-avatar>
-          <span class="username">{{ userStore.userInfo?.username }}</span>
+          <SmartAvatar :src="userStore.userInfo?.avatar" :name="userStore.userInfo?.username" :size="40" />
+          <div class="user-meta">
+            <span class="username">{{ userStore.userInfo?.username }}</span>
+            <span class="user-hint">已连接即时通讯服务</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-overview">
+        <div class="overview-card">
+          <span class="overview-label">会话</span>
+          <strong class="overview-value">{{ chatStore.conversations.length }}</strong>
+        </div>
+        <div class="overview-card">
+          <span class="overview-label">好友</span>
+          <strong class="overview-value">{{ contactStore.friends.length }}</strong>
+        </div>
+        <div class="overview-card">
+          <span class="overview-label">群组</span>
+          <strong class="overview-value">{{ contactStore.groups.length }}</strong>
         </div>
       </div>
 
@@ -48,6 +68,7 @@ import { useUserStore } from '@/stores/user'
 import { useContactStore } from '@/stores/contact'
 import { useChatStore } from '@/stores/chat'
 import { wsService } from '@/utils/websocket'
+import SmartAvatar from '@/components/SmartAvatar.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -69,20 +90,23 @@ const handleLogout = () => {
 
 const initWebSocket = () => {
   wsMessageHandler = (data) => {
-    if (data.type === 'message') {
+    if (data.type === 'message' && data.fromUserId) {
       chatStore.addMessage(data)
-      
+
       if (chatStore.currentConversation) {
-        const isCurrentPrivate = chatStore.currentConversation.type === 'private' && 
-          ((data.fromUserId === chatStore.currentConversation.userId) || 
+        const isCurrentPrivate = chatStore.currentConversation.type === 'private' &&
+          ((data.fromUserId === chatStore.currentConversation.userId) ||
            (data.toUserId === chatStore.currentConversation.userId))
-        const isCurrentGroup = chatStore.currentConversation.type === 'group' && 
+        const isCurrentGroup = chatStore.currentConversation.type === 'group' &&
           data.groupId === chatStore.currentConversation.groupId
-        
+
         if (isCurrentPrivate || isCurrentGroup) {
           scrollToBottom()
         }
       }
+    } else if (data.type === 'recall') {
+      // 后端广播撤回: 标记本地消息 status=2
+      chatStore.markRecalled(data.msgId)
     } else if (data.type === 'system') {
       if (data.action === 'online') {
         contactStore.updateFriendOnlineStatus(data.userId, true)
@@ -130,36 +154,110 @@ onBeforeUnmount(() => {
   display: flex;
   width: 100vw;
   height: 100vh;
-  background-color: #f5f5f5;
+  padding: 16px;
+  gap: 16px;
+  background:
+    radial-gradient(circle at top left, rgba(64, 158, 255, 0.12), transparent 24%),
+    linear-gradient(180deg, #f7faff 0%, #f3f6fb 100%);
+  box-sizing: border-box;
 }
 
 .sidebar {
   width: 240px;
-  background-color: #2c3e50;
+  background: linear-gradient(180deg, #24415f 0%, #1f344d 100%);
   color: white;
   display: flex;
   flex-direction: column;
+  border-radius: 28px;
+  box-shadow: 0 22px 50px rgba(31, 52, 77, 0.22);
+  overflow: hidden;
 }
 
 .sidebar-header {
-  padding: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.brand-block {
+  margin-bottom: 18px;
+}
+
+.brand-kicker {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.56);
+}
+
+.brand-title {
+  margin-top: 8px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
 }
 
 .user-info {
   display: flex;
   align-items: center;
   gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+}
+
+.user-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .username {
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
+  color: #fff;
+}
+
+.user-hint {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.66);
 }
 
 .sidebar-nav {
   flex: 1;
-  padding: 20px 0;
+  padding: 20px 16px;
+}
+
+.sidebar-overview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0 16px;
+}
+
+.overview-card {
+  padding: 14px 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+}
+
+.overview-label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.overview-value {
+  display: block;
+  margin-top: 8px;
+  font-size: 22px;
+  line-height: 1;
+  color: #fff;
 }
 
 .nav-menu {
@@ -167,32 +265,78 @@ onBeforeUnmount(() => {
   border: none;
 }
 
-.nav-menu .el-menu-item {
+:deep(.nav-menu .el-menu-item) {
+  height: 52px;
+  margin-bottom: 8px;
+  border-radius: 16px;
   color: rgba(255, 255, 255, 0.8);
+  font-size: 15px;
+  font-weight: 500;
 }
 
-.nav-menu .el-menu-item:hover,
-.nav-menu .el-menu-item.is-active {
-  background-color: rgba(255, 255, 255, 0.1);
+:deep(.nav-menu .el-menu-item:hover),
+:deep(.nav-menu .el-menu-item.is-active) {
+  background: rgba(255, 255, 255, 0.14);
   color: white;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+:deep(.nav-menu .el-menu-item .el-icon) {
+  margin-right: 10px;
 }
 
 .sidebar-footer {
-  padding: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 18px 16px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.sidebar-footer .el-button {
+:deep(.sidebar-footer .el-button) {
   color: rgba(255, 255, 255, 0.8);
   width: 100%;
+  height: 48px;
+  margin: 0;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
 }
 
-.sidebar-footer .el-button:hover {
+:deep(.sidebar-footer .el-button:hover) {
   color: white;
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .main-content {
   flex: 1;
   overflow: hidden;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.64);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(12px);
+}
+
+@media (max-width: 900px) {
+  .main-container {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .sidebar {
+    width: 220px;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-container {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    width: 100%;
+  }
+
+  .sidebar-overview {
+    grid-template-columns: repeat(3, minmax(88px, 1fr));
+  }
 }
 </style>

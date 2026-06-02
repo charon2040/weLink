@@ -1,26 +1,32 @@
 package com.epsilon.welink.common.config;
 
+import io.minio.BucketExistsArgs;
+import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
+import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-// 项目启动时，创建一个 MinioClient 客户端实例，交给 Spring 管理，
-// 随时可以上传 / 下载 / 删除文件（聊天图片、头像、文件等）
+/**
+ * MinIO 客户端 + 启动时自动建 bucket. 避免首次上传报 "bucket does not exist".
+ */
+@Slf4j
 @Configuration
 public class MinioConfig {
 
-    // 服务地址
     @Value("${welink.minio.endpoint}")
     private String endpoint;
 
-    // 访问密钥
     @Value("${welink.minio.access-key}")
     private String accessKey;
 
-    // 密钥
     @Value("${welink.minio.secret-key}")
     private String secretKey;
+
+    @Value("${welink.minio.bucket-name}")
+    private String bucketName;
 
     @Bean
     public MinioClient minioClient() {
@@ -28,5 +34,25 @@ public class MinioConfig {
                 .endpoint(endpoint)
                 .credentials(accessKey, secretKey)
                 .build();
+    }
+
+    @PostConstruct
+    public void ensureBucket() {
+        try {
+            MinioClient client = MinioClient.builder()
+                    .endpoint(endpoint)
+                    .credentials(accessKey, secretKey)
+                    .build();
+            boolean exists = client.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
+            if (!exists) {
+                client.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
+                log.info("MinIO bucket '{}' created", bucketName);
+            } else {
+                log.info("MinIO bucket '{}' already exists", bucketName);
+            }
+        } catch (Exception e) {
+            log.error("Failed to ensure MinIO bucket '{}'. File upload will fail until bucket is created manually.",
+                    bucketName, e);
+        }
     }
 }

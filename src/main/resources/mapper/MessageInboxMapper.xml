@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.epsilon.welink.message.mapper.MessageInboxMapper">
+    <!-- 注意: insertBatch 一条 multi-row INSERT 跨多个 receiver_id, 在 sharding profile 下无法路由到多个分片.
+         调用方 (MessageService.createInboxRecords) 已改为按 receiver 单行 insert. 该 SQL 仅保留给单库下的批量场景. -->
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT IGNORE INTO message_inbox
+            (msg_id, receiver_id, conversation_id, conversation_type, status, created_at, updated_at)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.msgId}, #{item.receiverId}, #{item.conversationId}, #{item.conversationType}, #{item.status}, NOW(), NOW())
+        </foreach>
+    </insert>
+
+</mapper>

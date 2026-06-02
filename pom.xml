@@ -18,12 +18,13 @@
     
     <properties>
         <java.version>17</java.version>
+        <lombok.version>1.18.32</lombok.version>
         <mybatis-plus.version>3.5.5</mybatis-plus.version>
         <netty.version>4.1.108.Final</netty.version>
-        <redisson.version>3.27.2</redisson.version>
         <minio.version>8.5.9</minio.version>
         <jwt.version>0.12.6</jwt.version>
         <kafka.version>3.6.1</kafka.version>
+        <shardingsphere.version>5.5.2</shardingsphere.version>
     </properties>
     
     <dependencies>
@@ -31,6 +32,16 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
         
         <dependency>
@@ -59,6 +70,19 @@
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
             <version>${mybatis-plus.version}</version>
         </dependency>
+
+        <!-- ShardingSphere JDBC 5.5+: jakarta.xml.bind 原生支持, 与 Spring Boot 3.2 命名空间一致 -->
+        <dependency>
+            <groupId>org.apache.shardingsphere</groupId>
+            <artifactId>shardingsphere-jdbc</artifactId>
+            <version>${shardingsphere.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.shardingsphere</groupId>
+                    <artifactId>shardingsphere-test-util</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         
         <dependency>
             <groupId>com.mysql</groupId>
@@ -71,13 +95,6 @@
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
             <version>${netty.version}</version>
-        </dependency>
-        
-        <!-- Redisson for Distributed Lock -->
-        <dependency>
-            <groupId>org.redisson</groupId>
-            <artifactId>redisson-spring-boot-starter</artifactId>
-            <version>${redisson.version}</version>
         </dependency>
         
         <!-- MinIO for File Storage -->
@@ -155,6 +172,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
+                    <mainClass>com.epsilon.welink.WeLinkApplication</mainClass>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>

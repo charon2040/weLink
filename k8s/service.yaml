@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: im-gateway
+  labels:
+    app: im-connection-gateway
+spec:
+  type: ClusterIP
+  selector:
+    app: im-connection-gateway
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  - name: websocket
+    port: 8081
+    targetPort: 8081
+    protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: im-gateway-lb
+  labels:
+    app: im-connection-gateway
+spec:
+  type: LoadBalancer
+  selector:
+    app: im-connection-gateway
+  ports:
+  - name: https
+    port: 443
+    targetPort: 8080
+    protocol: TCP
+  - name: wss
+    port: 443
+    targetPort: 8081
+    protocol: TCP

@@ -16,6 +16,12 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 @Slf4j
 @Service
 public class UserService {
@@ -104,6 +110,67 @@ public class UserService {
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(User::getUsername, username);
         return userMapper.selectOne(queryWrapper);
+    }
+
+    public Map<Long, User> getUserInfoMap(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<User> users = userMapper.selectBatchIds(userIds);
+        if (users == null || users.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        users.forEach(this::cacheUserInfoSafely);
+        return users.stream().collect(Collectors.toMap(User::getId, Function.identity()));
+    }
+
+    /**
+     * 用 refresh token 换一对新的 (access + refresh) token.
+     * 校验顺序: JWT 签名 → type=refresh → 与 Redis 缓存的最新 refresh token 一致.
+     * 任一失败抛 UNAUTHORIZED. 成功后旧的 refresh token 失效(被 Redis 覆盖).
+     */
+    public LoginResponse refresh(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new BusinessException(ResultCode.UNAUTHORIZED, "refreshToken 缺失");
+        }
+        if (!jwtUtil.validateToken(refreshToken)) {
+            throw new BusinessException(ResultCode.TOKEN_INVALID, "refreshToken 无效或已过期");
+        }
+        if (!jwtUtil.isRefreshToken(refreshToken)) {
+            throw new BusinessException(ResultCode.TOKEN_INVALID, "不是 refresh token");
+        }
+        Long userId = jwtUtil.getUserId(refreshToken);
+        String username = jwtUtil.getUsername(refreshToken);
+
+        // 防御性校验: 当前 Redis 里保存的 refresh token 是否一致 (踢出/换密码等场景下 Redis 已被清掉)
+        try {
+            Object cached = redisTemplate.opsForValue().get(RedisConstants.REFRESH_TOKEN_PREFIX + userId);
+            if (cached != null && !refreshToken.equals(cached.toString())) {
+                throw new BusinessException(ResultCode.TOKEN_INVALID, "refreshToken 已被新 token 替换");
+            }
+        } catch (DataAccessException e) {
+            log.warn("Redis unavailable when checking refresh token for userId={}", userId, e);
+        }
+
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(ResultCode.USER_NOT_FOUND);
+        }
+
+        String newAccess = jwtUtil.generateAccessToken(user.getId(), username);
+        String newRefresh = jwtUtil.generateRefreshToken(user.getId(), username);
+        cacheRefreshTokenSafely(user.getId(), newRefresh);
+
+        LoginResponse response = new LoginResponse();
+        response.setAccessToken(newAccess);
+        response.setRefreshToken(newRefresh);
+        LoginResponse.UserInfo info = new LoginResponse.UserInfo();
+        info.setId(user.getId());
+        info.setUsername(user.getUsername());
+        info.setNickname(user.getNickname());
+        info.setAvatar(user.getAvatar());
+        response.setUserInfo(info);
+        return response;
     }
 
     private void cacheUserInfoSafely(User user) {

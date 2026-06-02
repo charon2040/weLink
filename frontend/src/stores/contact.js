@@ -61,8 +61,12 @@ export const useContactStore = defineStore('contact', () => {
     return await groupApi.joinByName(groupName)
   }
 
+  async function joinGroupByNo(groupNo) {
+    return await groupApi.joinByNo(groupNo)
+  }
+
   function updateFriendOnlineStatus(userId, isOnline) {
-    const friend = friends.value.find(f => f.id === userId)
+    const friend = friends.value.find(f => String(f.id) === String(userId))
     if (friend) {
       friend.online = isOnline
     }
@@ -83,6 +87,7 @@ export const useContactStore = defineStore('contact', () => {
     createGroup,
     joinGroup,
     joinGroupByName,
+    joinGroupByNo,
     updateFriendOnlineStatus
   }
 })

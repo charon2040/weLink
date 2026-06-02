@@ -10,8 +10,9 @@ import java.time.LocalDateTime;
 @Data
 @TableName("group_info")
 public class GroupInfo {
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
+    private String groupNo;          // 8 位群号(类 QQ 群号), 创建时生成, 用于不靠群名加群
     private String groupName;
     private String avatar;
     private Long ownerId;

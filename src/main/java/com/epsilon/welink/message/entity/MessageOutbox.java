@@ -12,11 +12,13 @@ import java.time.LocalDateTime;
 @Data
 @TableName("message_outbox")
 public class MessageOutbox {
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     private String msgId;
     private Long targetUserId;
     private String topic;
+    private Long conversationId;
+    private LocalDateTime messageCreatedAt;
     private Integer status;
     private Integer retryCount;
     private LocalDateTime nextRetryAt;

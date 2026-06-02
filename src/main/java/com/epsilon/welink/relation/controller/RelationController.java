@@ -89,6 +89,20 @@ public class RelationController {
         return Result.success();
     }
 
+    @PostMapping("/group/join/by-no")
+    public Result<Void> joinGroupByNo(@RequestAttribute("userId") Long userId,
+                                      @RequestParam String groupNo) {
+        relationService.joinGroupByNo(userId, groupNo);
+        return Result.success();
+    }
+
+    @PostMapping("/group/{groupId}/invite/by-username")
+    public Result<java.util.Map<String, Object>> inviteByUsername(@RequestAttribute("userId") Long userId,
+                                                                  @PathVariable Long groupId,
+                                                                  @RequestBody java.util.List<String> usernames) {
+        return Result.success(relationService.inviteByUsernames(userId, groupId, usernames));
+    }
+
     @GetMapping("/group/list")
     public Result<List<GroupInfo>> getGroupList(@RequestAttribute("userId") Long userId) {
         List<GroupInfo> groupList = relationService.getGroupList(userId);
@@ -99,6 +113,19 @@ public class RelationController {
     public Result<List<GroupMember>> getGroupMembers(@PathVariable Long groupId) {
         List<GroupMember> members = relationService.getGroupMembers(groupId);
         return Result.success(members);
+    }
+
+    @GetMapping("/group/{groupId}")
+    public Result<GroupInfo> getGroupInfo(@PathVariable Long groupId) {
+        return Result.success(relationService.getGroupInfo(groupId));
+    }
+
+    @PostMapping("/group/{groupId}/notice")
+    public Result<Void> updateNotice(@RequestAttribute("userId") Long userId,
+                                     @PathVariable Long groupId,
+                                     @RequestBody java.util.Map<String, String> body) {
+        relationService.updateGroupNotice(userId, groupId, body.getOrDefault("notice", ""));
+        return Result.success();
     }
 
     @PostMapping("/group/{groupId}/invite")
@@ -121,6 +148,21 @@ public class RelationController {
     public Result<Void> quitGroup(@RequestAttribute("userId") Long userId,
                                   @PathVariable Long groupId) {
         relationService.quitGroup(userId, groupId);
+        return Result.success();
+    }
+
+    @PostMapping("/group/{groupId}/transfer/{newOwnerId}")
+    public Result<Void> transferOwnership(@RequestAttribute("userId") Long userId,
+                                          @PathVariable Long groupId,
+                                          @PathVariable Long newOwnerId) {
+        relationService.transferOwnership(userId, groupId, newOwnerId);
+        return Result.success();
+    }
+
+    @DeleteMapping("/group/{groupId}")
+    public Result<Void> dissolveGroup(@RequestAttribute("userId") Long userId,
+                                      @PathVariable Long groupId) {
+        relationService.dissolveGroup(userId, groupId);
         return Result.success();
     }
 }

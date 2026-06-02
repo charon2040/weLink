@@ -1,3 +1,7 @@
+# 本文件仅用于本地单机调试:
+# - Spring Boot 请配合 --spring.profiles.active=singledb 使用
+# - 只初始化单库 welink
+# - 默认 sharding 方案请改用 docker-compose.multi-mysql.yml
 services:
   mysql:
     image: mysql:8.0
@@ -16,6 +20,8 @@ services:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
       - --default-time-zone=+08:00
+      - --max-connections=500
+      - --innodb-buffer-pool-size=1G
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s

@@ -31,6 +31,12 @@ public class AuthController {
         return Result.success(response);
     }
 
+    @PostMapping("/refresh")
+    public Result<LoginResponse> refresh(@RequestBody java.util.Map<String, String> body) {
+        LoginResponse response = userService.refresh(body.get("refreshToken"));
+        return Result.success(response);
+    }
+
     @GetMapping("/user/search")
     public Result<User> searchUserByUsername(@RequestParam String username) {
         User user = userService.getUserByUsername(username);
