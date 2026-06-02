@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  labels:
+    app: welink
+data:
+  nginx.conf: |
+    worker_processes auto;
+    error_log /var/log/nginx/error.log warn;
+
+    events {
+        worker_connections 65535;
+        use epoll;
+        multi_accept on;
+    }
+
+    http {
+        access_log off;
+
+        map $http_upgrade $connection_upgrade {
+            default upgrade;
+            '' close;
+        }
+
+        upstream im_gateway_http {
+            least_conn;
+            # In the current repo, Kubernetes Service im-gateway already fronts all gateway Pods.
+            # If you are not using a Service, replace this with your real backend hostnames or IP:port pairs.
+            server im-gateway:8080 max_fails=3 fail_timeout=10s;
+            keepalive 64;
+        }
+
+        upstream im_gateway_ws {
+            # A WebSocket is pinned to the selected backend after the handshake succeeds.
+            # Keep this aligned with your actual Service or backend addresses.
+            least_conn;
+            server im-gateway:8081 max_fails=3 fail_timeout=10s;
+        }
+
+        server {
+            listen 443 ssl http2;
+            server_name im.example.com;
+
+            ssl_certificate /etc/nginx/cert/server.crt;
+            ssl_certificate_key /etc/nginx/cert/server.key;
+            ssl_protocols TLSv1.2 TLSv1.3;
+            ssl_ciphers HIGH:!aNULL:!MD5;
+
+            client_max_body_size 1g;
+            client_body_timeout 60s;
+
+            location /api/ {
+                proxy_http_version 1.1;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_set_header Connection "";
+                proxy_pass http://im_gateway_http;
+                proxy_read_timeout 60s;
+                proxy_send_timeout 60s;
+            }
+
+            location /actuator/ {
+                proxy_http_version 1.1;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_pass http://im_gateway_http;
+                allow 10.0.0.0/8;
+                deny all;
+            }
+
+            location /ws {
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection $connection_upgrade;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_read_timeout 3600s;
+                proxy_send_timeout 3600s;
+                proxy_buffering off;
+                proxy_pass http://im_gateway_ws;
+            }
+        }
+    }

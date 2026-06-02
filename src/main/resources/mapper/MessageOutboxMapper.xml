@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.epsilon.welink.message.mapper.MessageOutboxMapper">
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO message_outbox
+            (id, msg_id, target_user_id, topic, conversation_id, message_created_at,
+             status, retry_count, next_retry_at, last_error, created_at, updated_at)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.id}, #{item.msgId}, #{item.targetUserId}, #{item.topic}, #{item.conversationId},
+             #{item.messageCreatedAt}, #{item.status}, #{item.retryCount}, #{item.nextRetryAt},
+             #{item.lastError}, NOW(), NOW())
+        </foreach>
+    </insert>
+</mapper>

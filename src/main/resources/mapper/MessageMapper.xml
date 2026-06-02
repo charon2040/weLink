@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.epsilon.welink.message.mapper.MessageMapper">
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO message
+            (id, msg_id, from_user_id, to_user_id, group_id, group_seq, conversation_seq,
+             conversation_id, msg_type, content, status, created_at)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.id}, #{item.msgId}, #{item.fromUserId}, #{item.toUserId}, #{item.groupId},
+             #{item.groupSeq}, #{item.conversationSeq}, #{item.conversationId},
+             #{item.msgType}, #{item.content}, #{item.status}, NOW())
+        </foreach>
+    </insert>
+</mapper>

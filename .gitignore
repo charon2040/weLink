@@ -1,0 +1,68 @@
+HELP.md
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+**/frontend/node_modules/
+**/apache-jmeter-5.6.3/
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### Build output ###
+target/
+
+### k6 (deprecated, using JMeter) ###
+k6/
+
+### Logs ###
+*.log
+logs/
+backend.log.err
+
+### Archives ###
+*.zip
+
+### Frontend build output ###
+frontend/dist/
+frontend/.vite/
+vite.config.js.timestamp-*
+
+### Test runtime data ###
+test-full-flow/scenario_*/
+test-full-flow/_big_*
+
+### Temp ###
+temp/
+
+### Internal tools ###
+.omo/
+$null
