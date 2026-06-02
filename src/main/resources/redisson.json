@@ -1,0 +1,10 @@
+{
+  "singleServerConfig": {
+    "address": "redis://127.0.0.1:6379",
+    "connectionPoolSize": 64,
+    "connectionMinimumIdleSize": 10,
+    "connectTimeout": 10000,
+    "timeout": 3000,
+    "database": 0
+  }
+}
