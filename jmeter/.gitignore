@@ -1,0 +1,4 @@
+results/*.jtl
+results/*.log
+reports/
+data/tokens.csv

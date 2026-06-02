@@ -51,9 +51,6 @@ backend.log.err
 ### Archives ###
 *.zip
 
-### JMeter results ###
-jmeter/results/
-
 ### Frontend build output ###
 frontend/dist/
 frontend/.vite/
@@ -62,7 +59,6 @@ vite.config.js.timestamp-*
 ### Test runtime data ###
 test-full-flow/scenario_*/
 test-full-flow/_big_*
-test-full-flow/node_modules/
 
 ### Temp ###
 temp/
