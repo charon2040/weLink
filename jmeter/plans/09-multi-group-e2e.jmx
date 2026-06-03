@@ -1,0 +1,385 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
+  <hashTree>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="09 Multi-Group E2E Delivery" enabled="true">
+      <stringProp name="TestPlan.comments">多群聊端到端投递可靠性测试
+策略: 多个群同时发消息, 每个群有发送者和接收者, 验证跨群消息投递
+发送者不会收到自己发的消息推送 (服务端 pushToGroupOnlineMembers 跳过 senderId)
+验证: 接收方解析 JSON 检查 type=message + groupId != null
+      同时检查 content 包含 "e2e-mgrp" 标记
+限速: 服务端 group-rate-limit=10/s per user per group
+当前推荐: 16 群 x 100 人, CSV 按 memberIndex/groupIndex 交错, 避免前 N 个线程打到少数群
+参数示例: -JsendThreads=160 -JrecvThreads=800 -Jduration=90 -JsendDelayMs=500 -JwarmupMs=10000 -JrecvDuration=120
+160 发送者 x 2 msg/s (500ms延迟) = 320 group msg/s 入口目标
+JMX 内只记录实际 sent/received/timeout; 多群 expected deliveries 取决于每群在线接收者, 以 JTL 分析和文档口径为准
+数据: multi-group-members.csv, 规模由 prepare-multi-group.ps1 参数决定</stringProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments">
+        <collectionProp name="Arguments.arguments"/>
+      </elementProp>
+    </TestPlan>
+    <hashTree>
+
+      <SetupThreadGroup guiclass="SetupThreadGroupGui" testclass="SetupThreadGroup" testname="setUp" enabled="true">
+        <stringProp name="ThreadGroup.num_threads">1</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">1</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController">
+          <stringProp name="LoopController.loops">1</stringProp>
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+        </elementProp>
+      </SetupThreadGroup>
+      <hashTree>
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Init Counters" enabled="true">
+          <stringProp name="cacheKey">mgrp-e2e-init</stringProp>
+          <stringProp name="filename"></stringProp>
+          <stringProp name="parameters"></stringProp>
+          <stringProp name="script">import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
+props.put('mgrp.sent', new AtomicInteger(0));
+props.put('mgrp.received', new AtomicInteger(0));
+props.put('mgrp.recvErrors', new AtomicInteger(0));
+props.put('mgrp.startTime', new AtomicLong(System.currentTimeMillis()));
+
+log.info('[MGRP-E2E] Counters initialized');
+SampleResult.setResponseData('MGRP E2E counters initialized', 'UTF-8');</stringProp>
+          <stringProp name="scriptLanguage">groovy</stringProp>
+        </JSR223Sampler>
+        <hashTree/>
+      </hashTree>
+
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Multi-Group Senders" enabled="true">
+        <stringProp name="ThreadGroup.num_threads">${__P(sendThreads,30)}</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">${__P(sendRamp,20)}</stringProp>
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
+        <stringProp name="ThreadGroup.duration">${__P(duration,180)}</stringProp>
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController">
+          <stringProp name="LoopController.loops">-1</stringProp>
+          <boolProp name="LoopController.continue_forever">true</boolProp>
+        </elementProp>
+      </ThreadGroup>
+      <hashTree>
+        <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="multi-group-members.csv" enabled="true">
+          <stringProp name="filename">${__P(data.dir,../data)}/multi-group-members.csv</stringProp>
+          <stringProp name="fileEncoding">UTF-8</stringProp>
+          <stringProp name="variableNames">sGroupId,sUserId,sToken</stringProp>
+          <boolProp name="ignoreFirstLine">true</boolProp>
+          <stringProp name="delimiter">,</stringProp>
+          <boolProp name="quotedData">false</boolProp>
+          <boolProp name="recycle">true</boolProp>
+          <boolProp name="stopThread">false</boolProp>
+          <stringProp name="shareMode">shareMode.all</stringProp>
+        </CSVDataSet>
+        <hashTree/>
+
+        <eu.luminis.jmeter.wssampler.OpenWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.OpenWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.OpenWebSocketSampler" testname="Sender Connect" enabled="true">
+          <stringProp name="server">${__P(host,localhost)}</stringProp>
+          <stringProp name="port">${__P(wsport,8081)}</stringProp>
+          <stringProp name="path">/ws</stringProp>
+          <stringProp name="connectTimeout">15000</stringProp>
+          <stringProp name="readTimeout">15000</stringProp>
+          <stringProp name="connectionId">mgrp-s-${__threadNum}</stringProp>
+        </eu.luminis.jmeter.wssampler.OpenWebSocketSampler>
+        <hashTree/>
+
+        <eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.SingleWriteWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler" testname="Sender Auth" enabled="true">
+          <stringProp name="dataType">Text</stringProp>
+          <stringProp name="requestData">{"type":"auth","token":"${sToken}","deviceId":"mgrpS_${sUserId}"}</stringProp>
+          <stringProp name="connectionId">mgrp-s-${__threadNum}</stringProp>
+        </eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler>
+        <hashTree/>
+
+        <eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.SingleReadWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler" testname="Sender Auth Resp" enabled="true">
+          <stringProp name="dataType">Text</stringProp>
+          <stringProp name="readTimeout">10000</stringProp>
+          <stringProp name="connectionId">mgrp-s-${__threadNum}</stringProp>
+        </eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler>
+        <hashTree>
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="auth ok" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="-1234">"status":"success"</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
+            <intProp name="Assertion.test_type">16</intProp>
+          </ResponseAssertion>
+          <hashTree/>
+        </hashTree>
+
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Warmup Wait" enabled="true">
+          <stringProp name="cacheKey">mgrp-e2e-warmup</stringProp>
+          <stringProp name="filename"></stringProp>
+          <stringProp name="parameters"></stringProp>
+          <stringProp name="script">Thread.sleep(${__P(warmupMs,20000)}L);
+SampleResult.setResponseData('Warmup done', 'UTF-8');</stringProp>
+          <stringProp name="scriptLanguage">groovy</stringProp>
+        </JSR223Sampler>
+        <hashTree/>
+
+        <LoopController guiclass="LoopControlPanel" testclass="LoopController" testname="Send Loop" enabled="true">
+          <stringProp name="LoopController.loops">-1</stringProp>
+          <boolProp name="LoopController.continue_forever">true</boolProp>
+        </LoopController>
+        <hashTree>
+          <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Per-msg delay" enabled="true">
+            <stringProp name="ConstantTimer.delay">${__P(sendDelayMs,100)}</stringProp>
+          </ConstantTimer>
+          <hashTree/>
+
+          <eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.SingleWriteWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler" testname="Send Group Msg" enabled="true">
+            <stringProp name="dataType">Text</stringProp>
+            <stringProp name="requestData">{"type":"message","groupId":${sGroupId},"msgType":1,"content":"e2e-mgrp u${sUserId} g${sGroupId} ${__time(HHmmssSSS)} ${__Random(1,99999)}"}</stringProp>
+            <stringProp name="connectionId">mgrp-s-${__threadNum}</stringProp>
+          </eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler>
+          <hashTree>
+            <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="Count Sent" enabled="true">
+              <stringProp name="cacheKey">mgrp-count-sent</stringProp>
+              <stringProp name="filename"></stringProp>
+              <stringProp name="parameters"></stringProp>
+              <stringProp name="script">if (prev.isSuccessful()) {
+    def counter = props.get('mgrp.sent');
+    if (counter != null) { counter.incrementAndGet(); }
+}</stringProp>
+              <stringProp name="scriptLanguage">groovy</stringProp>
+            </JSR223PostProcessor>
+            <hashTree/>
+          </hashTree>
+
+          <eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.SingleReadWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler" testname="Drain Incoming" enabled="true">
+            <stringProp name="dataType">Text</stringProp>
+            <stringProp name="readTimeout">50</stringProp>
+            <stringProp name="connectionId">mgrp-s-${__threadNum}</stringProp>
+          </eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler>
+          <hashTree>
+            <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="Always OK" enabled="true">
+              <stringProp name="cacheKey">mgrp-drain-ok</stringProp>
+              <stringProp name="filename"></stringProp>
+              <stringProp name="parameters"></stringProp>
+              <stringProp name="script">prev.setSuccessful(true);</stringProp>
+              <stringProp name="scriptLanguage">groovy</stringProp>
+            </JSR223PostProcessor>
+            <hashTree/>
+          </hashTree>
+        </hashTree>
+
+        <eu.luminis.jmeter.wssampler.CloseWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.CloseWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.CloseWebSocketSampler" testname="Sender Close" enabled="true">
+          <stringProp name="statusCode">1000</stringProp>
+          <stringProp name="readTimeout">3000</stringProp>
+          <stringProp name="connectionId">mgrp-s-${__threadNum}</stringProp>
+        </eu.luminis.jmeter.wssampler.CloseWebSocketSampler>
+        <hashTree/>
+      </hashTree>
+
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Multi-Group Receivers" enabled="true">
+        <stringProp name="ThreadGroup.num_threads">${__P(recvThreads,100)}</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">${__P(recvRamp,15)}</stringProp>
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
+        <stringProp name="ThreadGroup.duration">${__P(recvDuration,195)}</stringProp>
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController">
+          <stringProp name="LoopController.loops">-1</stringProp>
+          <boolProp name="LoopController.continue_forever">true</boolProp>
+        </elementProp>
+      </ThreadGroup>
+      <hashTree>
+        <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="multi-group-members.csv (recv)" enabled="true">
+          <stringProp name="filename">${__P(data.dir,../data)}/multi-group-members.csv</stringProp>
+          <stringProp name="fileEncoding">UTF-8</stringProp>
+          <stringProp name="variableNames">rGroupId,rUserId,rToken</stringProp>
+          <boolProp name="ignoreFirstLine">true</boolProp>
+          <stringProp name="delimiter">,</stringProp>
+          <boolProp name="quotedData">false</boolProp>
+          <boolProp name="recycle">true</boolProp>
+          <boolProp name="stopThread">false</boolProp>
+          <stringProp name="shareMode">shareMode.all</stringProp>
+        </CSVDataSet>
+        <hashTree/>
+
+        <eu.luminis.jmeter.wssampler.OpenWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.OpenWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.OpenWebSocketSampler" testname="Receiver Connect" enabled="true">
+          <stringProp name="server">${__P(host,localhost)}</stringProp>
+          <stringProp name="port">${__P(wsport,8081)}</stringProp>
+          <stringProp name="path">/ws</stringProp>
+          <stringProp name="connectTimeout">15000</stringProp>
+          <stringProp name="readTimeout">15000</stringProp>
+          <stringProp name="connectionId">mgrp-r-${__threadNum}</stringProp>
+        </eu.luminis.jmeter.wssampler.OpenWebSocketSampler>
+        <hashTree/>
+
+        <eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.SingleWriteWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler" testname="Receiver Auth" enabled="true">
+          <stringProp name="dataType">Text</stringProp>
+          <stringProp name="requestData">{"type":"auth","token":"${rToken}","deviceId":"mgrpR_${rUserId}"}</stringProp>
+          <stringProp name="connectionId">mgrp-r-${__threadNum}</stringProp>
+        </eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler>
+        <hashTree/>
+
+        <eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.SingleReadWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler" testname="Receiver Auth Resp" enabled="true">
+          <stringProp name="dataType">Text</stringProp>
+          <stringProp name="readTimeout">10000</stringProp>
+          <stringProp name="connectionId">mgrp-r-${__threadNum}</stringProp>
+        </eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler>
+        <hashTree>
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="auth ok" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="-1234">"status":"success"</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
+            <intProp name="Assertion.test_type">16</intProp>
+          </ResponseAssertion>
+          <hashTree/>
+          <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="Init Hb Timer" enabled="true">
+            <stringProp name="cacheKey">mgrp-init-hb</stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="script">vars.putObject('lastHbTime', System.currentTimeMillis());</stringProp>
+            <stringProp name="scriptLanguage">groovy</stringProp>
+          </JSR223PostProcessor>
+          <hashTree/>
+        </hashTree>
+
+        <LoopController guiclass="LoopControlPanel" testclass="LoopController" testname="Recv Loop" enabled="true">
+          <stringProp name="LoopController.loops">-1</stringProp>
+          <boolProp name="LoopController.continue_forever">true</boolProp>
+        </LoopController>
+        <hashTree>
+          <IfController guiclass="IfControllerPanel" testclass="IfController" testname="Heartbeat Check" enabled="true">
+            <stringProp name="IfController.condition">${__groovy(System.currentTimeMillis() - (vars.getObject('lastHbTime') ?: 0L) > 30000L)}</stringProp>
+            <boolProp name="IfController.evaluateAll">false</boolProp>
+            <boolProp name="IfController.useExpression">true</boolProp>
+          </IfController>
+          <hashTree>
+            <eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.SingleWriteWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler" testname="Send Heartbeat" enabled="true">
+              <stringProp name="dataType">Text</stringProp>
+              <stringProp name="requestData">{"type":"heartbeat"}</stringProp>
+              <stringProp name="connectionId">mgrp-r-${__threadNum}</stringProp>
+            </eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler>
+            <hashTree>
+              <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="Update Hb Timer" enabled="true">
+                <stringProp name="cacheKey">mgrp-update-hb</stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="script">vars.putObject('lastHbTime', System.currentTimeMillis());</stringProp>
+                <stringProp name="scriptLanguage">groovy</stringProp>
+              </JSR223PostProcessor>
+              <hashTree/>
+            </hashTree>
+          </hashTree>
+
+          <eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.SingleReadWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler" testname="Recv Group Msg" enabled="true">
+            <stringProp name="dataType">Text</stringProp>
+            <stringProp name="readTimeout">${__P(recvReadTimeout,3000)}</stringProp>
+            <stringProp name="connectionId">mgrp-r-${__threadNum}</stringProp>
+          </eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler>
+          <hashTree>
+            <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="Validate + Count Received" enabled="true">
+              <stringProp name="cacheKey">mgrp-count-recv</stringProp>
+              <stringProp name="filename"></stringProp>
+              <stringProp name="parameters"></stringProp>
+              <stringProp name="script">def response = prev.getResponseDataAsString();
+if (response == null || response.isEmpty()) {
+    Thread.sleep(200);
+    return;
+}
+if (response.contains('e2e-mgrp')) {
+    def counter = props.get('mgrp.received');
+    if (counter != null) { counter.incrementAndGet(); }
+}
+// Update heartbeat timer on any successful read
+vars.putObject('lastHbTime', System.currentTimeMillis());</stringProp>
+              <stringProp name="scriptLanguage">groovy</stringProp>
+            </JSR223PostProcessor>
+            <hashTree/>
+          </hashTree>
+        </hashTree>
+
+        <eu.luminis.jmeter.wssampler.CloseWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.CloseWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.CloseWebSocketSampler" testname="Receiver Close" enabled="true">
+          <stringProp name="statusCode">1000</stringProp>
+          <stringProp name="readTimeout">3000</stringProp>
+          <stringProp name="connectionId">mgrp-r-${__threadNum}</stringProp>
+        </eu.luminis.jmeter.wssampler.CloseWebSocketSampler>
+        <hashTree/>
+      </hashTree>
+
+      <PostThreadGroup guiclass="PostThreadGroupGui" testclass="PostThreadGroup" testname="tearDown" enabled="true">
+        <stringProp name="ThreadGroup.num_threads">1</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">1</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController">
+          <stringProp name="LoopController.loops">1</stringProp>
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+        </elementProp>
+      </PostThreadGroup>
+      <hashTree>
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="Drain Wait" enabled="true">
+          <stringProp name="cacheKey">mgrp-e2e-drain</stringProp>
+          <stringProp name="filename"></stringProp>
+          <stringProp name="parameters"></stringProp>
+          <stringProp name="script">def drainSec = Integer.parseInt(props.getProperty('drainSec', '20'));
+log.info('[MGRP-E2E] Waiting {} seconds for pipeline to drain ...', drainSec);
+Thread.sleep(drainSec * 1000L);
+
+def sentBefore = ((java.util.concurrent.atomic.AtomicInteger) props.get('mgrp.sent')).get();
+def recvBefore = ((java.util.concurrent.atomic.AtomicInteger) props.get('mgrp.received')).get();
+log.info('[MGRP-E2E] After drain: sent={} received={}', sentBefore, recvBefore);
+
+SampleResult.setResponseData("Drained ${drainSec}s: sent=${sentBefore} received=${recvBefore}", 'UTF-8');
+SampleResult.setSuccessful(true);</stringProp>
+          <stringProp name="scriptLanguage">groovy</stringProp>
+        </JSR223Sampler>
+        <hashTree/>
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="MGRP E2E Delivery Report" enabled="true">
+          <stringProp name="cacheKey">mgrp-e2e-report</stringProp>
+          <stringProp name="filename"></stringProp>
+          <stringProp name="parameters"></stringProp>
+          <stringProp name="script">import java.util.concurrent.atomic.AtomicInteger;
+
+def sent = ((AtomicInteger) props.get('mgrp.sent')).get();
+def received = ((AtomicInteger) props.get('mgrp.received')).get();
+def recvErrors = ((AtomicInteger) props.get('mgrp.recvErrors')).get();
+def numReceivers = Integer.parseInt(props.getProperty('recvThreads', '500'));
+
+def report = """
+============================================
+  Multi-Group E2E Delivery Report
+============================================
+  Messages Sent:                ${sent}
+  Messages Received (verified): ${received}
+  Recv Timeouts:                ${recvErrors}
+  Num Receivers:                ${numReceivers}
+  Note: Expected deliveries are topology-dependent.
+        Use JTL analysis for final delivery-rate conclusions.
+============================================
+""";
+
+log.info(report);
+print(report);
+SampleResult.setResponseData(report, 'UTF-8');
+SampleResult.setSuccessful(true);
+def outDir = new File(System.getProperty('user.dir') + '/jmeter/results');
+if (!outDir.exists()) outDir.mkdirs();
+new File(outDir, '09-multi-group-e2e-report.txt').write(report);</stringProp>
+          <stringProp name="scriptLanguage">groovy</stringProp>
+        </JSR223Sampler>
+        <hashTree/>
+      </hashTree>
+
+      <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Summary Report" enabled="true">
+        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <objProp>
+          <name>saveConfig</name>
+          <value class="SampleSaveConfiguration">
+            <time>true</time><latency>true</latency><timestamp>true</timestamp><success>true</success>
+            <label>true</label><code>true</code><message>true</message><threadName>true</threadName>
+            <dataType>true</dataType><assertions>true</assertions><subresults>true</subresults>
+            <responseData>false</responseData><fieldNames>true</fieldNames>
+            <bytes>true</bytes><sentBytes>true</sentBytes><url>true</url>
+            <threadCounts>true</threadCounts><connectTime>true</connectTime>
+          </value>
+        </objProp>
+        <stringProp name="filename"></stringProp>
+      </ResultCollector>
+      <hashTree/>
+
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>

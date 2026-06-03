@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
+  <hashTree>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="02 Private Chat Throughput" enabled="true">
+      <stringProp name="TestPlan.comments">私聊消息吞吐量测试
+策略: N 对私聊 (A->B), 每对一个连接, 控制发送速率
+只发不收 (fire-and-forget), 关注发送侧吞吐
+限速: 服务端 send-rate-limit=200/s per user, group-rate-limit=100/s per group
+目标: 5000-8000 msg/s
+参数: -Jthreads=400 -Jduration=180 -Jramp=30 -JdelayMs=50
+400 线程 x 20 msg/s (50ms延迟) = 8000 msg/s 目标</stringProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments">
+        <collectionProp name="Arguments.arguments"/>
+      </elementProp>
+    </TestPlan>
+    <hashTree>
+
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Private Senders" enabled="true">
+        <stringProp name="ThreadGroup.num_threads">${__P(threads,400)}</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">${__P(ramp,30)}</stringProp>
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
+        <stringProp name="ThreadGroup.duration">${__P(duration,180)}</stringProp>
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController">
+          <stringProp name="LoopController.loops">-1</stringProp>
+          <boolProp name="LoopController.continue_forever">true</boolProp>
+        </elementProp>
+      </ThreadGroup>
+      <hashTree>
+        <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="private-pairs.csv" enabled="true">
+          <stringProp name="filename">${__P(data.dir,../data)}/private-pairs.csv</stringProp>
+          <stringProp name="fileEncoding">UTF-8</stringProp>
+          <stringProp name="variableNames">aUsername,aUserId,aToken,bUsername,bUserId,bToken</stringProp>
+          <boolProp name="ignoreFirstLine">true</boolProp>
+          <stringProp name="delimiter">,</stringProp>
+          <boolProp name="quotedData">false</boolProp>
+          <boolProp name="recycle">true</boolProp>
+          <boolProp name="stopThread">false</boolProp>
+          <stringProp name="shareMode">shareMode.all</stringProp>
+        </CSVDataSet>
+        <hashTree/>
+
+        <eu.luminis.jmeter.wssampler.OpenWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.OpenWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.OpenWebSocketSampler" testname="WS Connect" enabled="true">
+          <stringProp name="server">${__P(host,localhost)}</stringProp>
+          <stringProp name="port">${__P(wsport,8081)}</stringProp>
+          <stringProp name="path">/ws</stringProp>
+          <stringProp name="connectTimeout">15000</stringProp>
+          <stringProp name="readTimeout">15000</stringProp>
+          <stringProp name="connectionId">pvt-${__threadNum}</stringProp>
+        </eu.luminis.jmeter.wssampler.OpenWebSocketSampler>
+        <hashTree/>
+
+        <eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.SingleWriteWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler" testname="Auth" enabled="true">
+          <stringProp name="dataType">Text</stringProp>
+          <stringProp name="requestData">{"type":"auth","token":"${aToken}","deviceId":"pvt_${aUserId}"}</stringProp>
+          <stringProp name="connectionId">pvt-${__threadNum}</stringProp>
+        </eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler>
+        <hashTree/>
+
+        <eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.SingleReadWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler" testname="Auth Resp" enabled="true">
+          <stringProp name="dataType">Text</stringProp>
+          <stringProp name="readTimeout">5000</stringProp>
+          <stringProp name="connectionId">pvt-${__threadNum}</stringProp>
+        </eu.luminis.jmeter.wssampler.SingleReadWebSocketSampler>
+        <hashTree>
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="auth ok" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="-1234">"status":"success"</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
+            <intProp name="Assertion.test_type">16</intProp>
+          </ResponseAssertion>
+          <hashTree/>
+        </hashTree>
+
+        <LoopController guiclass="LoopControlPanel" testclass="LoopController" testname="Send Loop" enabled="true">
+          <stringProp name="LoopController.loops">-1</stringProp>
+          <boolProp name="LoopController.continue_forever">true</boolProp>
+        </LoopController>
+        <hashTree>
+          <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Per-msg delay" enabled="true">
+            <stringProp name="ConstantTimer.delay">${__P(delayMs,50)}</stringProp>
+          </ConstantTimer>
+          <hashTree/>
+
+          <eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.SingleWriteWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler" testname="Send Private Msg" enabled="true">
+            <stringProp name="dataType">Text</stringProp>
+            <stringProp name="requestData">{"type":"message","toUserId":${bUserId},"msgType":1,"content":"pvt u${aUserId}->${bUserId} ${__time(HHmmssSSS)} ${__Random(1,99999)}"}</stringProp>
+            <stringProp name="connectionId">pvt-${__threadNum}</stringProp>
+          </eu.luminis.jmeter.wssampler.SingleWriteWebSocketSampler>
+          <hashTree/>
+        </hashTree>
+
+        <eu.luminis.jmeter.wssampler.CloseWebSocketSampler guiclass="eu.luminis.jmeter.wssampler.CloseWebSocketSamplerGui" testclass="eu.luminis.jmeter.wssampler.CloseWebSocketSampler" testname="WS Close" enabled="true">
+          <stringProp name="statusCode">1000</stringProp>
+          <stringProp name="readTimeout">3000</stringProp>
+          <stringProp name="connectionId">pvt-${__threadNum}</stringProp>
+        </eu.luminis.jmeter.wssampler.CloseWebSocketSampler>
+        <hashTree/>
+      </hashTree>
+
+      <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Summary Report" enabled="true">
+        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <objProp>
+          <name>saveConfig</name>
+          <value class="SampleSaveConfiguration">
+            <time>true</time><latency>true</latency><timestamp>true</timestamp><success>true</success>
+            <label>true</label><code>true</code><message>true</message><threadName>true</threadName>
+            <dataType>true</dataType><assertions>true</assertions><subresults>true</subresults>
+            <responseData>false</responseData><fieldNames>true</fieldNames>
+            <bytes>true</bytes><sentBytes>true</sentBytes><url>true</url>
+            <threadCounts>true</threadCounts><connectTime>true</connectTime>
+          </value>
+        </objProp>
+        <stringProp name="filename"></stringProp>
+      </ResultCollector>
+      <hashTree/>
+
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>

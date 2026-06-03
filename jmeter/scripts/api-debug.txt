@@ -1,0 +1,16 @@
+Login perf_user_1: code=200
+
+userId1=165010 type=string
+
+Friend list: code=200 data length=1
+
+Friend list full: {"code":200,"message":"success","data":[{"id":"165009","username":"perf_user_0","nickname":"PerfUser0","avatar":null,"email":null,"phone":null,"status":1,"createdAt":"2026-06-03T02:40:46","updatedAt":"2026-06-03T02:40:46","online":false}]}
+
+Group list: code=200 data length=0
+
+Group list full: {"code":200,"message":"success","data":[]}
+
+
+--- Checking friend IDs ---
+
+Friend IDs: 165009(string)

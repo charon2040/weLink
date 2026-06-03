@@ -1,0 +1,12 @@
+
+============================================
+  Multi-Group Chat E2E Delivery Report
+============================================
+  Messages Sent:       1264804
+  Messages Received:   20509
+  Recv Timeouts:       4585
+  Num Receivers:       800
+  Expected Deliveries: 1011843200
+  Delivery Rate:       0.00%
+  Per-Receiver Avg:    25.6
+============================================

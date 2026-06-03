@@ -1,0 +1,5 @@
+Login via proxy: code=200
+
+Friend list via proxy: {"code":200,"message":"success","data":[{"id":"165009","username":"perf_user_0","nickname":"PerfUser0","avatar":null,"email":null,"phone":null,"status":1,"createdAt":"2026-06-03T02:40:46","updatedAt":"2026-06-03T02:40:46","online":false}]}
+
+Group list via proxy: {"code":200,"message":"success","data":[]}

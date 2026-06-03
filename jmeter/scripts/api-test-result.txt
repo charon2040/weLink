@@ -1,0 +1,19 @@
+Login perf_user_1: code=200
+
+userId1=165010
+
+Login perf_user_0: code=200
+
+userId0=165009
+
+Search perf_user_0: {"code":200,"message":"success","data":{"id":"165009","username":"perf_user_0","nickname":"PerfUser0","avatar":null,"email":null,"phone":null,"status":1,"createdAt":"2026-06-03T02:40:46","updatedAt":"2026-06-03T02:40:46","online":null}}
+
+Apply friend: 200 {"code":200,"message":"success","data":null}
+
+Accept friend: 200 {"code":200,"message":"success","data":null}
+
+Friend list user1: {"code":200,"message":"success","data":[{"id":"165009","username":"perf_user_0","nickname":"PerfUser0","avatar":null,"email":null,"phone":null,"status":1,"createdAt":"2026-06-03T02:40:46","updatedAt":"2026-06-03T02:40:46","online":false}]}
+
+Friend list user0: {"code":200,"message":"success","data":[{"id":"165010","username":"perf_user_1","nickname":"PerfUser1","avatar":null,"email":null,"phone":null,"status":1,"createdAt":"2026-06-03T02:40:46","updatedAt":"2026-06-03T02:40:46","online":true}]}
+
+Group list user1: {"code":200,"message":"success","data":[]}

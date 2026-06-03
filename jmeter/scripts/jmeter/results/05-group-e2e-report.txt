@@ -1,0 +1,11 @@
+
+============================================
+  Group Chat E2E Delivery Report
+============================================
+  Messages Sent:               262316
+  Messages Received (verified):0
+  Recv Timeouts:               0
+  Num Receivers:               100
+  Expected Deliveries:         26231600
+  Delivery Rate:               0.00%
+============================================

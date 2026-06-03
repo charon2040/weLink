@@ -1,0 +1,9 @@
+
+============================================
+  Private Chat E2E Delivery Report
+============================================
+  Messages Sent:                100
+  Messages Received (verified): 0
+  Recv Errors/Timeouts:         0
+  Delivery Rate:                0.00%
+============================================
